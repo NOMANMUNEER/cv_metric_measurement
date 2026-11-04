@@ -9,10 +9,15 @@ Meets Requirements 5 and 6 of Measure It assessment.
 """
 
 import os
+import sys
 import argparse
 import numpy as np
 import cv2
 import torch
+
+# Ensure project root is in sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from inference.measure import measure_object, REF_LENGTH_MM, REF_WIDTH_MM
 
 # Physical ground truth measured by calliper
