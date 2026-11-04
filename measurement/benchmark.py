@@ -69,7 +69,9 @@ def run_benchmark(image_paths, weights_path, calib_dir="calibration", output_dir
             "conf": res_undist.get("confidence", 0.0)
         })
 
-        print(f"[{idx:02d}] {fname} | Undist Error: {avg_err_undist:.2f} mm | Raw Error: {avg_err_raw:.2f} mm")
+        err_str_undist = f"{avg_err_undist:.2f} mm" if avg_err_undist is not None else "REFUSED"
+        err_str_raw = f"{avg_err_raw:.2f} mm" if avg_err_raw is not None else "REFUSED"
+        print(f"[{idx:02d}] {fname} | Undist Error: {err_str_undist} | Raw Error: {err_str_raw}")
 
     # Aggregate Statistics
     valid_undist_errs = [r["err_undist"] for r in results if r["err_undist"] is not None]

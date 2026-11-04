@@ -37,47 +37,64 @@ def load_image_any(image_path):
     img_bgr = cv2.cvtColor(np.array(pil_im), cv2.COLOR_RGB2BGR)
     return img_bgr
 
-def find_reference_card(img_bgr, min_area=30000, max_area=500000):
+def find_reference_card(img_bgr, diary_mask=None):
     """
-    Locates the reference card (CNIC) using adaptive color and contour filtering.
-    Returns: (rect_center, (w_px, h_px), angle), contour, or None if not found.
+    Locates the reference card (CNIC) using color thresholding and contour geometry.
+    Filters out the diary area to prevent false matches.
+    Returns: ((cx, cy), (dim_long, dim_short), angle), contour, or None.
     """
+    h_img, w_img = img_bgr.shape[:2]
     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (7, 7), 0)
     
-    # Bilateral filter to keep edges sharp
-    bilateral = cv2.bilateralFilter(blurred, 9, 75, 75)
-    edged = cv2.Canny(bilateral, 30, 150)
+    # Mask out the diary so its edges are never confused with the card
+    if diary_mask is not None:
+        dilated_diary = cv2.dilate(diary_mask, np.ones((25, 25), np.uint8))
+        gray[dilated_diary > 0] = 0
+
+    # The CNIC card is distinctly bright with high contrast against dark diary/background
+    # Multi-scale adaptive thresholding
+    blurred = cv2.GaussianBlur(gray, (9, 9), 0)
+    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 51, -5)
     
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-    dilated = cv2.dilate(edged, kernel, iterations=2)
-    
-    contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # Find clean rectangular contours
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     best_card_rect = None
     best_card_contour = None
-    nominal_aspect = REF_LENGTH_MM / REF_WIDTH_MM  # 85.0 / 50.0 = 1.70
+    expected_aspect = REF_LENGTH_MM / REF_WIDTH_MM  # 85.0 / 50.0 = 1.70
     
-    for cnt in sorted(contours, key=cv2.contourArea, reverse=True):
+    # Target pixel area for CNIC card in 3024x4032 image typically spans 20,000 to 450,000 px
+    candidate_rects = []
+    for cnt in contours:
         area = cv2.contourArea(cnt)
-        if area < min_area or area > max_area:
+        if area < 15000 or area > 600000:
             continue
             
         rect = cv2.minAreaRect(cnt)
         (cx, cy), (w, h), angle = rect
-        if w == 0 or h == 0:
+        if w < 50 or h < 50:
             continue
             
         dim_long = max(w, h)
         dim_short = min(w, h)
         aspect = dim_long / dim_short
         
-        # Match expected card aspect ratio (1.70 +/- 0.40)
-        if 1.30 <= aspect <= 2.10:
-            best_card_rect = ((cx, cy), (dim_long, dim_short), angle)
-            best_card_contour = cnt
-            break
-            
+        # Check aspect ratio proximity to standard card aspect ratio
+        aspect_diff = abs(aspect - expected_aspect)
+        if aspect_diff < 0.45:
+            # Check rectangular fill factor
+            rect_area = dim_long * dim_short
+            fill_factor = area / (rect_area + 1e-6)
+            if fill_factor > 0.65:
+                candidate_rects.append((aspect_diff, rect, cnt))
+
+    if candidate_rects:
+        # Pick candidate closest to true aspect ratio
+        candidate_rects.sort(key=lambda x: x[0])
+        _, best_card_rect, best_card_contour = candidate_rects[0]
+        (cx, cy), (w, h), angle = best_card_rect
+        best_card_rect = ((cx, cy), (max(w, h), min(w, h)), angle)
+
     return best_card_rect, best_card_contour
 
 def measure_object(image_path, weights_path, calib_dir="calibration", output_overlay="overlay_result.jpg", apply_undistort=True):
@@ -137,8 +154,8 @@ def measure_object(image_path, weights_path, calib_dir="calibration", output_ove
     diary_long_px = max(d_w, d_h)
     diary_short_px = min(d_w, d_h)
 
-    # Step 5: Locate Reference Card
-    card_rect, card_cnt = find_reference_card(img)
+    # Step 5: Locate Reference Card (passing pred_mask so diary area is excluded)
+    card_rect, card_cnt = find_reference_card(img, diary_mask=pred_mask)
     if card_rect is None:
         return {
             "status": "REFERENCE_NOT_FOUND",
