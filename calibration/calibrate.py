@@ -70,8 +70,8 @@ def calibrate_camera(image_dir, pattern_size=(9, 7), square_size_mm=10.0, output
     if len(valid_fnames) < 10:
         raise RuntimeError("Fewer than 10 valid calibration views found. Need more views.")
 
-    # Calibration with CALIB_FIX_K3 to prevent distortion polynomial blowing up
-    flags = cv2.CALIB_FIX_K3
+    # Calibration flags: fix k2 and k3 to prevent polynomial divergence on near-rectilinear phone lenses
+    flags = cv2.CALIB_FIX_K2 + cv2.CALIB_FIX_K3
     ret_rms, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(
         objpoints, imgpoints, img_shape, None, None, flags=flags
     )
