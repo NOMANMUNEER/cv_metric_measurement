@@ -1,0 +1,9 @@
+*.HEIC
+*.heic
+dataset/images/
+dataset/masks/
+sample_inspect.jpg
+inspect_rot_*.jpg
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

@@ -1,16 +1,10 @@
-# Test Split Manifest (Pending Image Capture)
-# Note: Diary images have not been taken yet.
-#
-# Naming Convention:
-# Images will follow the sequential format: diary_001.jpg, diary_002.jpg, diary_003.jpg, ...
-#
-# Split Protocol:
-# - Target dataset: >= 70 images total.
-# - Partition: 70% Train / 20% Validation / 10% Test.
-# - Seed: Fixed random seed of 42.
-# - Integrity constraint: The test set will be partitioned before any model training
-#   begins and will never be modified or used for hyperparameter tuning.
-#
-# This placeholder manifest will be replaced with the exact list of held-out
-# test image filenames as soon as the diary dataset is captured and partitioned,
-# strictly before training starts.
+# Frozen Test Split Manifest (Seed 42)
+# Must never be used for training, hyperparameter tuning, or model selection
+diary_009.jpg
+diary_024.jpg
+diary_031.jpg
+diary_047.jpg
+diary_050.jpg
+diary_051.jpg
+diary_056.jpg
+diary_064.jpg

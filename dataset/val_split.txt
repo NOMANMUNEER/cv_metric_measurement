@@ -1,0 +1,17 @@
+# Validation Split Manifest (Seed 42)
+diary_002.jpg
+diary_016.jpg
+diary_019.jpg
+diary_026.jpg
+diary_039.jpg
+diary_040.jpg
+diary_043.jpg
+diary_054.jpg
+diary_057.jpg
+diary_058.jpg
+diary_060.jpg
+diary_063.jpg
+diary_067.jpg
+diary_069.jpg
+diary_072.jpg
+diary_076.jpg
